@@ -15,7 +15,7 @@ function runExec(command, cb) {
     });
 }
 
-runExec("git rev-list --all --count", function (err, response) {
+runExec("git rev-list --count HEAD $(git branch | sed -n -e 's/^\* \(.*\)/\1/p')", function (err, response) {
     if (err) {
         console.error(err);
         return;
@@ -26,7 +26,9 @@ runExec("git rev-list --all --count", function (err, response) {
         return;
     }
     let ver = Math.floor(num / 10000) + "." + Math.floor(num / 100) + "." + Math.floor(num % 100)
+    //
     let newResult = fs.readFileSync(packageFile, 'utf8').replace(/"version":\s*"(.*?)"/, `"version": "${ver}"`);
     fs.writeFileSync(packageFile, newResult, 'utf8');
+    //
     console.log("new version: " + ver);
 });

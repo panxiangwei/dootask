@@ -35,7 +35,7 @@
                 :before-upload="handleBeforeUpload"/>
         </div>
         <Spin fix v-if="uploadIng > 0">
-            <Icon type="ios-loading" class="upload-control-spin-icon-load"></Icon>
+            <Icon type="ios-loading" class="icon-loading"></Icon>
             <div>{{$L('正在上传文件...')}}</div>
         </Spin>
         <Modal v-model="transfer" class="mdeditor-transfer" footer-hide fullscreen transfer :closable="false">
@@ -52,7 +52,7 @@
                     @on-upload-image="handleUploadImageUpload"/>
             </div>
             <Spin fix v-if="uploadIng > 0">
-                <Icon type="ios-loading" class="upload-control-spin-icon-load"></Icon>
+                <Icon type="ios-loading" class="icon-loading"></Icon>
                 <div>{{$L('正在上传文件...')}}</div>
             </Spin>
         </Modal>
@@ -158,8 +158,8 @@
 
                 uploadIng: 0,
                 uploadFormat: ['jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'esp', 'pdf', 'rar', 'zip', 'gz', 'ai', 'avi', 'bmp', 'cdr', 'eps', 'mov', 'mp3', 'mp4', 'pr', 'psd', 'svg', 'tif'],
-                actionUrl: this.$store.state.method.apiUrl('system/fileupload'),
-                maxSize: 204800
+                actionUrl: $A.apiUrl('system/fileupload'),
+                maxSize: 1024000
             };
         },
         mounted() {
@@ -173,7 +173,7 @@
 
             headers() {
                 return {
-                    fd: this.$store.state.method.getStorageString("userWsFd"),
+                    fd: $A.getStorageString("userWsFd"),
                     token: this.userToken,
                 }
             },
@@ -227,8 +227,8 @@
                 }
             },
             htmlOk() {
-                $A.loadScript('js/html2md.js', () => {
-                    if (typeof toMarkdown !== 'function') {
+                $A.loadScript('js/html2md.js', (e) => {
+                    if (e !== null || typeof toMarkdown !== 'function') {
                         $A.modalAlert("组件加载失败！");
                         return;
                     }
@@ -248,9 +248,12 @@
 
             /********************文件上传部分************************/
 
-            handleProgress() {
+            handleProgress(event, file) {
                 //开始上传
-                this.uploadIng++;
+                if (file._uploadIng === undefined) {
+                    file._uploadIng = true;
+                    this.uploadIng++;
+                }
             },
 
             handleSuccess(res, file) {

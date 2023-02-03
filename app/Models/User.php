@@ -9,9 +9,8 @@ use Cache;
 use Carbon\Carbon;
 
 /**
- * Class User
+ * App\Models\User
  *
- * @package App\Models
  * @property int $userid
  * @property array $identity 身份
  * @property string|null $az A-Z
@@ -29,8 +28,11 @@ use Carbon\Carbon;
  * @property string|null $line_at 最后在线时间（接口）
  * @property int|null $task_dialog_id 最后打开的任务会话ID
  * @property string|null $created_ip 注册IP
+ * @property string|null $disable_at 禁用时间
+ * @property int|null $email_verity 邮箱是否已验证
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Database\Factories\UserFactory factory(...$parameters)
  * @method static \Illuminate\Database\Eloquent\Builder|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|User newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|User query()
@@ -38,7 +40,9 @@ use Carbon\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder|User whereChangepass($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereCreatedIp($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|User whereDisableAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|User whereEmailVerity($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereEncrypt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereIdentity($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereLastAt($value)
@@ -60,6 +64,7 @@ class User extends AbstractModel
     protected $primaryKey = 'userid';
 
     protected $hidden = [
+        'disable_at',
         'updated_at',
     ];
 
@@ -145,6 +150,24 @@ class User extends AbstractModel
         }
     }
 
+    /**
+     * 检查环境是否允许
+     * @param null $onlyUserid  仅指定会员
+     */
+    public function checkSystem($onlyUserid = null)
+    {
+        if ($onlyUserid && $onlyUserid != $this->userid) {
+            return;
+        }
+        if (env("PASSWORD_ADMIN") == 'disabled') {
+            if ($this->userid == 1) {
+                throw new ApiException('当前环境禁止此操作');
+            }
+        }
+        if (env("PASSWORD_OWNER") == 'disabled') {
+            throw new ApiException('当前环境禁止此操作');
+        }
+    }
 
     /** ***************************************************************************************** */
     /** ***************************************************************************************** */
@@ -160,18 +183,20 @@ class User extends AbstractModel
     public static function reg($email, $password, $other = [])
     {
         //邮箱
-        if (!Base::isMail($email)) {
+        if (!Base::isEmail($email)) {
             throw new ApiException('请输入正确的邮箱地址');
         }
         if (User::email2userid($email) > 0) {
+            $isRegVerify = Base::settingFind('emailSetting', 'reg_verify') === 'open';
+            $user = self::whereUserid(User::email2userid($email))->first();
+            if ($isRegVerify && $user->email_verity === 0) {
+                UserEmailVerification::userEmailSend($user);
+                throw new ApiException('您的账号已注册过，请验证邮箱', ['code' => 'email']);
+            }
             throw new ApiException('邮箱地址已存在');
         }
         //密码
-        if (strlen($password) < 6) {
-            throw new ApiException('密码设置不能小于6位数');
-        } elseif (strlen($password) > 32) {
-            throw new ApiException('密码最多只能设置32位数');
-        }
+        self::passwordPolicy($password);
         //开始注册
         $encrypt = Base::generatePassword(6);
         $inArray = [
@@ -439,6 +464,37 @@ class User extends AbstractModel
                 } else {
                     return Base::retError('no');
                 }
+        }
+    }
+
+    /**
+     * 检测密码策略是否符合
+     * @param $password
+     * @return void
+     */
+    public static function passwordPolicy($password)
+    {
+        if (strlen($password) < 6) {
+            throw new ApiException('密码设置不能小于6位数');
+        }
+        if (strlen($password) > 32) {
+            throw new ApiException('密码最多只能设置32位数');
+        }
+        // 复杂密码
+        $password_policy = Base::settingFind('system', 'password_policy');
+        if ($password_policy == 'complex') {
+            if (preg_match("/^[0-9]+$/", $password)) {
+                throw new ApiException('密码不能全是数字，请包含数字，字母大小写或者特殊字符');
+            }
+            if (preg_match("/^[a-zA-Z]+$/", $password)) {
+                throw new ApiException('密码不能全是字母，请包含数字，字母大小写或者特殊字符');
+            }
+            if (preg_match("/^[0-9A-Z]+$/", $password)) {
+                throw new ApiException('密码不能全是数字+大写字母，密码包含数字，字母大小写或者特殊字符');
+            }
+            if (preg_match("/^[0-9a-z]+$/", $password)) {
+                throw new ApiException('密码不能全是数字+小写字母，密码包含数字，字母大小写或者特殊字符');
+            }
         }
     }
 }

@@ -1,73 +1,34 @@
 <template>
     <div class="setting-item submit">
-        <Form ref="formDatum" :model="formDatum" label-width="auto" @submit.native.prevent>
-            <FormItem :label="$L('允许注册')" prop="reg">
-                <RadioGroup v-model="formDatum.reg">
-                    <Radio label="open">{{$L('允许')}}</Radio>
-                    <Radio label="close">{{$L('禁止')}}</Radio>
-                </RadioGroup>
-            </FormItem>
-            <FormItem :label="$L('登录验证码')" prop="loginCode">
-                <RadioGroup v-model="formDatum.login_code">
-                    <Radio label="auto">{{$L('自动')}}</Radio>
-                    <Radio label="open">{{$L('开启')}}</Radio>
-                    <Radio label="close">{{$L('关闭')}}</Radio>
-                </RadioGroup>
-            </FormItem>
-        </Form>
-        <div class="setting-footer">
-            <Button :loading="loadIng > 0" type="primary" @click="submitForm">{{$L('提交')}}</Button>
-            <Button :loading="loadIng > 0" @click="resetForm" style="margin-left: 8px">{{$L('重置')}}</Button>
-        </div>
+        <Tabs v-model="tabAction">
+            <TabPane :label="$L('系统设置')" name="setting">
+                <SystemSetting/>
+            </TabPane>
+            <TabPane :label="$L('任务优先级')" name="taskPriority">
+                <SystemTaskPriority/>
+            </TabPane>
+            <TabPane :label="$L('项目模板')" name="columnTemplate">
+                <SystemColumnTemplate/>
+            </TabPane>
+            <TabPane :label="$L('邮件设置')" name="emailSetting">
+                <SystemEmailSetting/>
+            </TabPane>
+        </Tabs>
     </div>
 </template>
 
 <script>
+import SystemSetting from "./components/SystemSetting";
+import SystemTaskPriority from "./components/SystemTaskPriority";
+import SystemColumnTemplate from "./components/SystemColumnTemplate";
+import SystemEmailSetting from "./components/SystemEmailSetting";
+
 export default {
+    components: {SystemColumnTemplate, SystemTaskPriority, SystemSetting, SystemEmailSetting},
     data() {
         return {
-            loadIng: 0,
-
-            formDatum: {},
+            tabAction: 'setting',
         }
     },
-
-    mounted() {
-        this.systemSetting();
-    },
-
-    methods: {
-        submitForm() {
-            this.$refs.formDatum.validate((valid) => {
-                if (valid) {
-                    this.systemSetting(true);
-                }
-            })
-        },
-
-        resetForm() {
-            this.formDatum = $A.cloneJSON(this.formDatum_bak);
-        },
-
-        systemSetting(save) {
-            this.loadIng++;
-            this.$store.dispatch("call", {
-                url: 'system/setting?type=' + (save ? 'save' : 'get'),
-                data: this.formDatum,
-            }).then(({data}) => {
-                if (save) {
-                    $A.messageSuccess('修改成功');
-                }
-                this.loadIng--;
-                this.formDatum = data;
-                this.formDatum_bak = $A.cloneJSON(this.formDatum);
-            }).catch(({msg}) => {
-                if (save) {
-                    $A.modalError(msg);
-                }
-                this.loadIng--;
-            });
-        }
-    }
 }
 </script>

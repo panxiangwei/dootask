@@ -123,15 +123,11 @@ export default {
         },
 
         autoToBottom() {
-            if (this.autoBottom && this.$refs.bottom) {
-                try {
-                    this.$refs.bottom.scrollIntoView(false);
-                } catch (e) {
-                    scrollIntoView(this.$refs.bottom, {
-                        behavior: 'instant',
-                        inline: 'end',
-                    })
-                }
+            if (this.autoBottom) {
+                $A.scrollToView(this.$refs.bottom, {
+                    behavior: 'instant',
+                    inline: 'end',
+                })
             }
         },
 
@@ -146,7 +142,11 @@ export default {
                 scrollY: wScrollY,                          //滚动的距离
                 scrollE: bScrollH - wInnerH - wScrollY,     //与底部距离
             }
-        }
+        },
+
+        querySelector(el) {
+            return this.$refs.scrollerView && this.$refs.scrollerView.querySelector(el)
+        },
     }
 }
 </script>

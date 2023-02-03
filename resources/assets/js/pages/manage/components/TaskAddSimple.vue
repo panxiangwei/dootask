@@ -16,7 +16,7 @@
                 <div v-if="parentId == 0" class="priority">
                     <ul>
                         <li v-for="(item, key) in taskPriority" :key="key">
-                            <ETooltip v-if="active" :content="item.name + ' (' + item.days + $L('天') + ')'">
+                            <ETooltip v-if="active" :content="taskPriorityContent(item)">
                                 <i
                                     class="taskfont"
                                     :style="{color:item.color}"
@@ -55,7 +55,7 @@
         <div class="priority">
             <ul>
                 <li v-for="(item, key) in taskPriority" :key="key">
-                    <ETooltip v-if="active" :content="item.name + ' (' + item.days + $L('天') + ')'">
+                    <ETooltip v-if="active" :content="taskPriorityContent(item)">
                         <i
                             class="taskfont"
                             :style="{color:item.color}"
@@ -103,6 +103,7 @@ export default {
     data() {
         return {
             addData: {
+                name: "",
                 owner: 0,
                 column_id: 0,
                 times: [],
@@ -206,6 +207,7 @@ export default {
                 this.loadIng--;
                 this.active = false;
                 this.addData = {
+                    name: "",
                     owner: 0,
                     column_id: 0,
                     times: [],
@@ -218,6 +220,14 @@ export default {
                 $A.modalError(msg);
                 this.loadIng--;
             });
+        },
+
+        taskPriorityContent(item) {
+            let days = $A.runNum(item.days);
+            if (days <= 0) {
+                return item.name + ' (' + this.$L('无时间限制') + ')';
+            }
+            return item.name + ' (' + days + this.$L('天') + ')';
         },
 
         choosePriority(item) {

@@ -5,10 +5,15 @@ English | **[中文文档](./README_CN.md)**
 - [Screenshot Preview](README_PREVIEW.md)
 - [Demo site](http://www.dootask.com/)
 
+**QQ Group**
+
+Group No.: `546574618`
+
 ## Setup
 
-> `Docker` & `Docker Compose` must be installed
-
+- `Docker` & `Docker Compose v2.0+` must be installed
+- System: `Centos/Debian/Ubuntu/macOS`
+- Hardware suggestion: 2 cores and above 4G memory
 
 ### Deployment project
 
@@ -16,30 +21,28 @@ English | **[中文文档](./README_CN.md)**
 # 1、Clone the repository
 
 # Clone projects on github
-git clone https://github.com/kuaifan/dootask.git
-# or you can use gitee
-git clone https://gitee.com/aipaw/dootask.git
+git clone --depth=1 https://github.com/kuaifan/dootask.git
+# Or you can use gitee
+git clone --depth=1 https://gitee.com/aipaw/dootask.git
 
-# 2、enter directory
+# 2、Enter directory
 cd dootask
 
-# 3、Build project
+# 3、Installation（Custom port installation: ./cmd install --port 2222）
 ./cmd install
 ```
-Installed, project url: **`http://IP:PORT`**（`PORT`Default is`2222`）。
 
-### Default Account
+### Reset password
 
-```text
-account: admin@dootask.com
-password: 123456
+```bash
+# Reset default account password
+./cmd repassword
 ```
 
 ### Change port
 
 ```bash
-./cmd php bin/run --port=2222
-./cmd up -d
+./cmd port 2222
 ```
 
 ### Stop server
@@ -51,18 +54,40 @@ password: 123456
 ./cmd start
 ```
 
+### Development compilation
+
+```bash
+# Development mode, Mac OS only
+./cmd dev
+   
+# Production projects, macOS only
+./cmd prod  
+```
+
 ### Shortcuts for running command
 
 ```bash
 # You can do this using the following command
-./cmd artisan "your command"          // To run a artisan command
-./cmd php "your command"              // To run a php command
-./cmd composer "your command"         // To run a composer command
-./cmd supervisorctl "your command"    // To run a supervisorctl command
-./cmd test "your command"             // To run a phpunit command
-./cmd npm "your command"              // To run a npm command
-./cmd yarn "your command"             // To run a yarn command
-./cmd mysql "your command"            // To run a mysql command (use `./cmd mysql bak` Backup database)
+./cmd artisan "your command"          # To run a artisan command
+./cmd php "your command"              # To run a php command
+./cmd nginx "your command"            # To run a nginx command
+./cmd redis "your command"            # To run a redis command
+./cmd composer "your command"         # To run a composer command
+./cmd supervisorctl "your command"    # To run a supervisorctl command
+./cmd test "your command"             # To run a phpunit command
+./cmd mysql "your command"            # To run a mysql command (backup: Backup database, recovery: Restore database)
+```
+
+### NGINX PROXY SSL
+
+```bash 
+# 1、Nginx config add
+proxy_set_header X-Forwarded-Host $http_host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+# 2、Running commands in a project
+./cmd https
 ```
 
 ## Upgrade
@@ -70,13 +95,41 @@ password: 123456
 **Note: Please back up your data before upgrading!**
 
 ```bash
-# Enter directory and run command
+# Method 1: Running commands in a project
 ./cmd update
+
+# Or method 2: use this method if method 1 fails
+git pull
+./cmd mysql backup
+./cmd uninstall
+./cmd install
+./cmd mysql recovery
+```
+
+If 502 after the upgrade please run `./cmd restart` restart the service.
+
+## Transfer
+
+Follow these steps to complete the project migration after the new project is installed:
+
+1. Backup original database
+
+```bash
+# Run command under old project
+./cmd mysql backup
+```
+
+2. Copy `database backup file` and `public/uploads` directory to the new project.
+
+3. Restore database to new project
+```bash
+# Run command under new project
+./cmd mysql recovery
 ```
 
 ## Uninstall
 
 ```bash
-# Enter directory and run command
+# Running commands in a project
 ./cmd uninstall
 ```

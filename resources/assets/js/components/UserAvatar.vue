@@ -2,7 +2,7 @@
     <ETooltip
         v-if="user"
         class="common-avatar"
-        :open-delay="600"
+        :open-delay="openDelay"
         :disabled="tooltipDisabled"
         :placement="tooltipPlacement">
         <div slot="content" class="common-avatar-transfer">
@@ -16,9 +16,11 @@
         <div class="avatar-wrapper">
             <div v-if="showIcon" :class="['avatar-box', userId === userid || user.online ? 'online' : '']" :style="boxStyle">
                 <em :style="spotStyle"></em>
-                <EAvatar v-if="showImg" :class="{'avatar-default':isDefault}" :src="user.userimg" :size="avatarSize"/>
+                <EAvatar v-if="showImg" ref="avatar" :class="{'avatar-default':isDefault}" :src="user.userimg" :size="avatarSize" :error="onError">
+                    <span class="avatar-char" :style="spotStyle">{{nickname}}</span>
+                </EAvatar>
                 <EAvatar v-else :size="avatarSize" class="avatar-text">
-                    <span :style="spotStyle">{{nickname}}</span>
+                    <span class="avatar-char" :style="spotStyle">{{nickname}}</span>
                 </EAvatar>
             </div>
             <div v-if="showName" class="avatar-name" :style="nameStyle">{{user.nickname}}</div>
@@ -28,6 +30,8 @@
 
 <script>
     import {mapState} from "vuex";
+    import {Store} from 'le5le-store';
+
     export default {
         name: 'UserAvatar',
         props: {
@@ -67,14 +71,31 @@
                 type: String,
                 default: ''
             },
+            openDelay: {
+                type: Number,
+                default: 600
+            },
         },
         data() {
             return {
-                user: null
+                user: null,
+                subscribe: null
             }
         },
         mounted() {
-            this.getData()
+            this.getData();
+            //
+            this.subscribe = Store.subscribe('cacheUserActive', (data) => {
+                if (data.userid == this.userid) {
+                    this.setUser(data)
+                }
+            });
+        },
+        beforeDestroy() {
+            if (this.subscribe) {
+                this.subscribe.unsubscribe();
+                this.subscribe = null;
+            }
         },
         computed: {
             ...mapState(["userId", "userInfo", "userOnline"]),
@@ -153,7 +174,7 @@
 
             userInfo(info) {
                 if (info.userid == this.userid) {
-                    this.user = info;
+                    this.setUser(info);
                 }
             },
 
@@ -169,20 +190,30 @@
                     return;
                 }
                 if (this.userid == this.userInfo.userid) {
-                    this.user = this.userInfo;
+                    this.setUser(this.userInfo);
                     return;
                 }
-                this.$store.dispatch("getUserBasic", {
-                    userid: this.userid,
-                    success: (user) => {
-                        this.user = user;
+                this.$store.dispatch("getUserBasic", {userid: this.userid});
+            },
+
+            setUser(info) {
+                try {
+                    if (this.user && this.user.userimg != info.userimg && this.$refs.avatar) {
+                        this.$refs.avatar.$data.isImageExist = true;
                     }
-                });
+                } catch (e) {
+                    //
+                }
+                this.user = info;
+            },
+
+            onError() {
+                return true
             },
 
             openDialog() {
-                this.goForward({path: '/manage/messenger'});
-                this.$store.dispatch("openDialogUserid", this.userid);
+                this.goForward({name: 'manage-messenger'});
+                this.$store.dispatch("openDialogUserid", this.userid).catch(() => {})
             }
         }
     };
